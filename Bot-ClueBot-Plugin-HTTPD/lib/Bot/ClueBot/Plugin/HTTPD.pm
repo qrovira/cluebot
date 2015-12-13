@@ -75,26 +75,25 @@ sub _handle_command {
 
     my ($command) = $req->url =~ m#^/command/([^/\?]+)(\?.*)?$#;
     unless( $command ) {
-        $self->_respond_json_or_html( $req, "Unknown command", 404 );
+        _respond_json_or_html( $req, "Unknown command", 404 );
         return;
     }
 
     my %params = map { $_ => $req->parm($_) } $req->params;
     my $argline = delete $params{argline};
 
-    $self->bot->plugin('Commands')->event(
-        command     => $command,
+    my $context = Bot::ClueBot::Plugin::Commands::Context::HTTPD->new(
+        bot => $self->bot,
         (
-            defined($argline) ?
-                (argline => $argline) :
-                keys(%params) ?
-                    (params => \%params) :
-                    ()
+            defined($argline) ? (argline => $argline) :
+            keys(%params) ? (params => \%params) :
+            ()
         ),
-        source_type => 'httpd',
-        source_jid  => $user.'/httpd',
-        reply       => sub { $self->_respond_json_or_html( $req, shift ); },
+        user => $user,
+        req  => $req,
     );
+
+    $self->bot->handle_comand( $command, $context );
 }
 
 sub _handle_authorize {
@@ -145,7 +144,7 @@ my %status2message = (
     404 => "Not Found",
 );
 sub _respond_json_or_html {
-    my ($self, $req, $data, $status_code, $status_message ) = @_;
+    my ($req, $data, $status_code, $status_message ) = @_;
 
     $status_code //= 200;
 
@@ -172,15 +171,17 @@ package Bot::ClueBot::Plugin::Commands::Context::HTTPD;
 
 use YAML;
 
-our @ISA = ('Bot::ClueBot::Plugin::Commands::Context::Message');
+our @ISA = ('Bot::ClueBot::Plugin::Commands::Context');
 
 sub new {
     my ($proto, %args) = @_;
+    my $user = delete $args{user};
+    my $req = delete $args{req};
 
     my $self = $proto->SUPER::new(
         %args,
-        source_room => $room->jid,
-        source_user => ($room_user ? ($room_user->real_jid // "unknown") : "unknown"),
+        source_type => 'httpd',
+        source_jid  => $user.'/httpd',
     );
 
     return $self;
@@ -188,6 +189,9 @@ sub new {
 
 sub reply {
     my ($self, $data) = @_;
+    Bot::ClueBot::Plugin::HTTPD::_respond_json_or_html( $self->{req}, $data );
 }
+
+sub private_reply { shift->reply(@_); }
 
 1;

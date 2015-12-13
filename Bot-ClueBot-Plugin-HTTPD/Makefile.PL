@@ -19,12 +19,9 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'Bot::ClueBot' => "0.01",
-<<<<<<< HEAD
         'AnyEvent::HTTP'              => '2.21',
         'AnyEvent::HTTPD'             => '0.93',
-=======
         'Bot::ClueBot::Plugin::WebTokens' => "0.01",
->>>>>>> Deps
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => 'Bot-ClueBot-Plugin-HTTPD-*' },

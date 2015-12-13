@@ -1,0 +1,163 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use 5.14.0;
+
+use AnyEvent;
+use Getopt::Long qw(:config no_ignore_case);
+use Term::ReadPassword;
+use Bot::ClueBot;
+use YAML qw/ LoadFile /;
+use Data::Dumper;
+use Term::ANSIColor;
+
+
+#
+# Cmdline options
+
+GetOptions(
+    'u=s'     => \(my $USER),
+    'D=s'     => \(my $DOMAIN),
+    'v+'      => \(my $VERBOSE = 0),
+    'd+'      => \(my $EVENT_DEBUG = 0),
+    'p+'      => \(my $DUMP = 0),
+    'f=s'     => \(my $CONF_FILE = $ENV{HOME} ? "$ENV{HOME}/.cluebot.yaml" : undef),
+    'F'       => \(my $FABULOUS = 0),
+    'h|help+' => \(my $HELP = 0),
+);
+
+# help!
+if( $HELP == 1 ) {
+    exec("perldoc $0");
+} elsif( $HELP == 2 ) {
+    say "You know perl, don't you? :)";
+    sleep 2;
+    exec("vi $0");
+}
+
+#
+# Cluebot configuration and defaults
+
+my $conf = -r $CONF_FILE ? LoadFile( $CONF_FILE ) : {};
+
+$conf->{username} //= $ENV{USER};
+
+$conf->{username} = $USER if $USER;
+$conf->{domain} = $DOMAIN if $DOMAIN;
+
+unless( defined $conf->{username} and defined $conf->{domain}) {
+    say "You need to specify at least a user and a domain (see --help)";
+    exit 1;
+}
+
+$conf->{password} = read_password('Enter password: ') unless defined $conf->{password};
+
+unless( $conf->{data_path} ) {
+    $conf->{data_path} = $CONF_FILE;
+    $conf->{data_path} =~ s#yaml$##;
+}
+
+my $plugins = delete( $conf->{plugins} );
+
+#
+# Main
+
+$Object::Event::DEBUG = 2 if $EVENT_DEBUG;
+$Bot::ClueBot::DUMP = $DUMP;
+
+my $cluebot = Bot::ClueBot->new( %$conf );
+
+$cluebot->reg_cb( log   => sub { say( ( $FABULOUS ? colored('LOG: ','green') : '').$_[1] );  } ) if( $VERBOSE );
+$cluebot->reg_cb( warn  => sub { warn( ($FABULOUS ? colored('WARN: ','red') : 'WARN: ').$_[1]."\n" ); } );
+$cluebot->reg_cb( error => sub { warn( ($FABULOUS ? colored('ERROR: ','red') : 'ERROR: ').$_[1]."\n" ); } );
+$cluebot->reg_cb( fatal => sub { die $_[1]; } );
+$cluebot->reg_cb( debug => sub {
+    my ($bot, $msg, @args) = @_;
+    say( ($FABULOUS ? colored("DEBUG: ",'blue') : 'DEBUG: ').$msg );
+    if( $VERBOSE > 2 && @args ) {
+        say Data::Dumper->new(\@args)->Terse(1)->Maxdepth(3)->Sortkeys(1)->Indent(1)->Deepcopy(1)->Pad("** ")->Dump;
+    }
+} ) if( $VERBOSE > 1 );
+
+# Load plugins: options on yaml file can be both an array or a hash, we don't care about order, it's just for conveninence.
+# This is silly, but before the YAML syntex used was weird/broken, and we want not to enforce "plugin: ~" clutter, but allow "-plugin"
+my %plugins = ref($plugins) eq 'ARRAY' ? map { ref($_) ? %$_ : ($_ => undef) } @$plugins : %$plugins;
+$cluebot->load_plugin( $_, $plugins{$_}, \%plugins ) foreach( keys %plugins );
+
+# Connect and wait until we get a disconnect
+$cluebot->connect->recv;
+
+=head1 NAME
+
+cluebot - Simple Bot::ClueBot script
+
+=head1 SYNOPSIS
+
+  Usage: cluebot [options]
+
+    cluebot -f path/to/conf.yaml
+    cluebot -f path/to/conf.yaml -v -v -v -F
+
+  Options:
+    -v          Verbose mode. Use multiple times for increased verborrea.
+    -u          Username to use on the jabber connection.
+    -D          Domain part to use on the jabber connection.
+    -d          Enable Object::Event debug. (spammy!)
+    -p          Enable XMPP wire data dump mode. (requires verbosity > 1)
+    -f=s        Configuration file to use.
+    -h, --help  Display this help message. Twice for very detailed usage.
+    -F          Fabulous, ANSIColor, output.
+
+=head1 DESCRIPTION
+
+Start an instance of ClueBot.
+
+While you can provide a limited set of options via command line options, the
+use of a proper configuration file is encouraged.
+
+When run without a configuration file, I<user> will default to C<$ENV{USER}>,
+and password will be read using L<Term::ReadPassword>. You should also specify a
+valid I<domain>, which will also set the host to try to connect to.
+
+=head1 CONFIGURATION
+
+The base configation file (defaults to F<$ENV{HOME}/.cluebot.yml>), is a YAML
+file containing configuration options for the base bot class (see L<Bot::ClueBot/CONSTRUCTOR>.
+
+It can also contain a list of plugins to load, with optional per-plugin
+configuration (see each plugin's B<OPTIONS> section on the docs).
+
+=head2 SAMPLE CONFIGURATION
+
+  ---
+  host: "domain.tld"
+  username: "cluebot"
+  domain: "domain.tld"
+  password: "mypassword"
+  data_path: "~/.cluebot.data/"
+  plugins:
+      - LogToRoom:
+          log_level: "debug"
+      - Chatroom:
+          rooms:
+              controlroom@conference.domain.tld:
+                  autojoin: 1
+                  password: "room_password"
+              thundercats@conference.domain.tld:
+                  quiet: 1
+
+=head2 PERSISTENT PLUGIN DATA
+
+Plugins will try to persist state data on files under the I<data_path> path,
+which is generally the authoritative source for initialization instead of the
+main configuration file (e.g. the list of rooms the bot is connected to will
+override the one on the main conf).
+
+=head1 SEE ALSO
+
+L<Bot::ClueBot>
+
+=cut
+
+1;

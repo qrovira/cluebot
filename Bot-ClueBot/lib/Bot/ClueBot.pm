@@ -62,10 +62,6 @@ There are several plugins available:
 
 Provide some basic shortcuts for common tasks.
 
-=item L<Bot::ClueBot::Plugin::Echo>
-
-Sample plugin that echoes back any direct messages received.
-
 =item L<Bot::ClueBot::Plugin::Commands>
 
 Command support via private messages.

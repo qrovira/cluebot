@@ -5,14 +5,13 @@ use warnings FATAL => 'all';
 use Test::More;
 
 
-plan tests => 9;
+plan tests => 8;
 
 
 BEGIN {
     use_ok('Bot::ClueBot') and
     use_ok('Bot::ClueBot::Plugin') and
     use_ok('Bot::ClueBot::Plugin::DefaultHelpers') and
-    use_ok('Bot::ClueBot::Plugin::Echo') and
     use_ok('Bot::ClueBot::Plugin::Commands') and
     use_ok('Bot::ClueBot::Plugin::Chatroom') and
     use_ok('Bot::ClueBot::Plugin::Admin') and

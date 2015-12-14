@@ -10,11 +10,12 @@ Version 0.02
 
 Cluebot is a jabber bot which can be extended through plugins.
 
-You can run the bot via the [cluebot](https://metacpan.org/pod/cluebot) command, which reads configuration from a YAML file
+You can run the bot via the `cluebot command`, which reads configuration from a YAML file
 (defaults to `~/.cluebot.yaml`).
 
 A simple configuration file could look like this:
 
+```yaml
     ---
     username: "cluebot"
     hostname: "jabber.example.com"
@@ -24,6 +25,7 @@ A simple configuration file could look like this:
         - LogToRoom:
             log_level: "debug"
         - Chatroom
+```
 
 By default, the bot will create a directory on the same location the configuration file
 resides, in order to persist each plugin data.
@@ -32,49 +34,45 @@ resides, in order to persist each plugin data.
 
 There are several plugins available:
 
-- [Bot::ClueBot::Plugin::DefaultHelpers](https://metacpan.org/pod/Bot::ClueBot::Plugin::DefaultHelpers)
+- Bot::ClueBot::Plugin::DefaultHelpers
 
     Provide some basic shortcuts for common tasks.
 
-- [Bot::ClueBot::Plugin::Echo](https://metacpan.org/pod/Bot::ClueBot::Plugin::Echo)
-
-    Sample plugin that echoes back any direct messages received.
-
-- [Bot::ClueBot::Plugin::Commands](https://metacpan.org/pod/Bot::ClueBot::Plugin::Commands)
+- Bot::ClueBot::Plugin::Commands
 
     Command support via private messages.
 
-- [Bot::ClueBot::Plugin::Chatroom](https://metacpan.org/pod/Bot::ClueBot::Plugin::Chatroom)
+- Bot::ClueBot::Plugin::Chatroom
 
     Chatroom support.
 
-- [Bot::ClueBot::Plugin::LogToRoom](https://metacpan.org/pod/Bot::ClueBot::Plugin::LogToRoom)
+- Bot::ClueBot::Plugin::LogToRoom
 
     Log to a chatroom.
 
-- [Bot::ClueBot::Plugin::Admin](https://metacpan.org/pod/Bot::ClueBot::Plugin::Admin)
+- Bot::ClueBot::Plugin::Admin
 
     Minimalisting administration commands.
 
-- [Bot::ClueBot::Plugin::ACL](https://metacpan.org/pod/Bot::ClueBot::Plugin::ACL)
+- Bot::ClueBot::Plugin::ACL
 
     Naive access control implementation for commands.
 
-- [Bot::ClueBot::Plugin::WebTokens](https://metacpan.org/pod/Bot::ClueBot::Plugin::WebTokens)
+- Bot::ClueBot::Plugin::WebTokens
 
     Naive WebToken generation with rotating secrets, to
     provide a minimalistic authentication through other (eg. non-jabber) channels.
 
-- [Bot::ClueBot::Plugin::HTTPD](https://metacpan.org/pod/Bot::ClueBot::Plugin::HTTPD)
+- Bot::ClueBot::Plugin::HTTPD
 
     Expose all commands through an HTTP web interface.
 
-- [Bot::ClueBot::Plugin::WebSocket](https://metacpan.org/pod/Bot::ClueBot::Plugin::WebSocket)
+- Bot::ClueBot::Plugin::WebSocket
 
     Expose all commands through a websocket interface.
 
 If you want to write your own plugins, make sure to read the documentation on
-the base [Bot::ClueBot::Plugin](https://metacpan.org/pod/Bot::ClueBot::Plugin) class. You can use [Bot:::ClueBot::Plugin::Sample](https://metacpan.org/pod/Bot:::ClueBot::Plugin::Sample)
+the base Bot::ClueBot::Plugin class. You can use Bot:::ClueBot::Plugin::Sample
 as a starter template.
 
 # MAIN CONFIGURATION
@@ -115,7 +113,7 @@ These are the base configuration options accepted by the bot.
 
 # METHODS
 
-[Bot::ClueBot](https://metacpan.org/pod/Bot::ClueBot) implements the following methods.
+Bot::ClueBot implements the following methods.
 
 ## new
 
@@ -196,11 +194,11 @@ Helper callbacks receive the bot object as a first parameter, and whatever argum
 Different logging functions on the base bot object, meant to be used also by the plugins.
 
 Right now this generates events, for which the default handler prints to STDOUT/STDERR, but you
-can handle those in plugins for fancier logging (see [Bot::ClueBot::Plugin::LogToRoom](https://metacpan.org/pod/Bot::ClueBot::Plugin::LogToRoom) plugin).
+can handle those in plugins for fancier logging (see Bot::ClueBot::Plugin::LogToRoom plugin).
 
 # EVENTS
 
-[Bot::ClueBot](https://metacpan.org/pod/Bot::ClueBot) generates the following events.
+Bot::ClueBot generates the following events.
 
 ## connect
 
@@ -235,10 +233,6 @@ additional variables to dump with extra information.
 Quim Rovira, `<met at cpan.org>`
 
 # SUPPORT
-
-- RT: CPAN's request tracker (report bugs here)
-
-    [http://rt.cpan.org/NoAuth/Bugs.html?Dist=Bot-ClueBot](http://rt.cpan.org/NoAuth/Bugs.html?Dist=Bot-ClueBot)
 
 - GitHub repository
 

@@ -1,6 +1,14 @@
 #!/bin/bash
 
-ALL_REPOS=$( find . -maxdepth 1 -type d | grep ClueBot | cut -d '/' -f 2 | sort )
+ALL_REPOS=$( cat <<EOD
+Bot-ClueBot
+Bot-ClueBot-Plugin-WebTokens
+Bot-ClueBot-Plugin-HTTPD
+Bot-ClueBot-Plugin-WebSocket
+Bot-ClueBot-Plugin-Run
+Bot-ClueBot-Plugin-Git
+EOD
+)
 
 for REPO in $ALL_REPOS; do
     pushd $REPO >> /dev/null

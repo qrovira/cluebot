@@ -18,6 +18,7 @@ RUN cpanm \
     AnyEvent::Open3::Simple \
     AnyEvent::WebSocket::Server \
     AnyEvent::WebSocket::Client \
+    AnyEvent::Redis \
     JSON::WebToken
 
 COPY . /usr/src/cluebot

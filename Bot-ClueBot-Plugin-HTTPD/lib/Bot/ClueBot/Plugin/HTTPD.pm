@@ -7,21 +7,71 @@ use strict;
 use utf8;
 use 5.10.0;
 
-=head1 VERSION
-
-Version 0.02
-
-=cut
-
-our $VERSION = '0.02';
-
-
 use AnyEvent::HTTPD;
 use JSON;
 use YAML;
 use HTML::Entities;
 use Sys::Hostname;
 use URI::Escape;
+
+our $VERSION = '0.02';
+
+=head1 NAME
+
+Bot::ClueBot::Plugin::HTTPD - ClueBot plugin that provides HTTP access to the bot
+
+=head1 VERSION
+
+Version 0.02
+
+=head1 SYNOPSIS
+
+When this plugin is enabled, the bot will listen for HTTP connections on a given
+port (defaults to 9090), providing access to bot features.
+
+In order to authenticate the user, a JWT is required, which can be requested via
+the WebTokens plugin.
+
+While plugins can register additional url endpoints, the two default ones are:
+
+=over
+
+=item /authenticate
+
+To provide the web token / login.
+
+=item /command/<command>
+
+Calls <command> on the bot and returns the results. Command parameters can be provided via GET/POST params.
+
+=back
+
+=head1 OPTIONS
+
+=over
+
+=item port
+
+Port the bot should listen to for HTTP connections (defaults to 9090)
+
+=item cert
+
+Certificate to use for SSL connections
+
+=back
+
+=head1 HELPERS
+
+=over
+
+=item webservice( $path => $callback, ... )
+
+Register callbacks on given URL paths. See L<AnyEvent::HTTPD> for callback conventions.
+
+=back
+
+=cut
+
 
 sub requires { qw/Commands WebTokens/ }
 

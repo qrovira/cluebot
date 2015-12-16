@@ -93,7 +93,7 @@ sub _handle_command {
         req  => $req,
     );
 
-    $self->bot->handle_comand( $command, $context );
+    $self->bot->handle_command( $command, $context );
 }
 
 sub _handle_authorize {
@@ -176,12 +176,12 @@ our @ISA = ('Bot::ClueBot::Plugin::Commands::Context');
 sub new {
     my ($proto, %args) = @_;
     my $user = delete $args{user};
-    my $req = delete $args{req};
 
     my $self = $proto->SUPER::new(
         %args,
         source_type => 'httpd',
         source_jid  => $user.'/httpd',
+        source_user => $user,
     );
 
     return $self;

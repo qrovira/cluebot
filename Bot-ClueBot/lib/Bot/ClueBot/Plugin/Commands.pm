@@ -342,6 +342,7 @@ use YAML;
 sub new {
     my ($proto, %args) = @_;
     my $msg = $args{message};
+    my ($user, $resource) = split('/', $msg->from, 2);
 
     die "Invalid source message specified"
         unless $msg && ref($msg) && $msg->isa('AnyEvent::XMPP::IM::Message');
@@ -349,7 +350,7 @@ sub new {
     my $self = $proto->SUPER::new(
         source      => $msg->type,
         source_jid  => $msg->from,
-        source_user => $msg->from,
+        source_user => $user,
         %args,
     );
 

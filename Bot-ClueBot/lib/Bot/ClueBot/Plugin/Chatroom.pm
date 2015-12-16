@@ -313,12 +313,12 @@ sub new {
     die "Invalid source message room specified"
         unless $room && ref($room) && $room->isa('AnyEvent::XMPP::Ext::MUC::Room');
 
-    my $room_user = $room->get_user( $msg->from_nick );
+    my ($room_user, $room_user_resource) = split('/', $room->get_user( $msg->from_nick ) // "unknown/unknown",2);
 
     my $self = $proto->SUPER::new(
         %args,
         source_room => $room->jid,
-        source_user => ($room_user ? ($room_user->real_jid // "unknown") : "unknown"),
+        source_user => $room_user,
     );
 
     return $self;

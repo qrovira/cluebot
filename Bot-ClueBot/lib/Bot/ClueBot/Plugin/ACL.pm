@@ -13,15 +13,14 @@ sub init {
 
     $self->bot->helper(
         auth => sub {
-            my ($bot, $acl, $jid) = @_;
-            my ($user, $resource) = split('/',$jid , 2);
+            my ($bot, $acl, $user) = @_;
 
             if($args->{admin} && $user eq $args->{admin}) {
-                $self->bot->debug("Auth check for global admin user $user (resource $resource) on acl $acl (was jid $jid)");
+                $self->bot->debug("Auth check for global admin user $user on acl $acl");
                 return 1;
             }
 
-            $self->bot->debug("Auth check for user $user (resource $resource) on acl $acl (was jid $jid)");
+            $self->bot->debug("Auth check for user $user on acl $acl");
 
             return $self->data->{acls}{$acl} && exists $self->data->{acls}{$acl}{$user};
         },

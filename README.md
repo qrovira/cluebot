@@ -58,12 +58,12 @@ There are several plugins available:
 
     Naive access control implementation for commands.
 
-- Bot::ClueBot::Plugin::WebTokens
+- [Bot::ClueBot::Plugin::WebTokens](Bot-ClueBot-Plugin-WebTokens/README.md)
 
     Naive WebToken generation with rotating secrets, to
     provide a minimalistic authentication through other (eg. non-jabber) channels.
 
-- Bot::ClueBot::Plugin::HTTPD
+- [Bot::ClueBot::Plugin::HTTPD](Bot-ClueBot-Plugin-HTTPD/README.md)
 
     Expose all commands through an HTTP web interface.
 

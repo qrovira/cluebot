@@ -65,6 +65,7 @@ sub init {
             }
             $self->bot->debug("Accepted websocket connection request for $user");
             $self->{connections}{$user} = $connection;
+            $self->bot->ws_send($user, "Welcome, $user!");
             $connection->on(each_message => sub { $self->handle_websocket_message( shift, shift, $user ) } );
             $connection->on(finish => sub {
                 undef $connection;
@@ -95,8 +96,8 @@ sub init {
             help_usage => "websocket_status",
             category => "WebSockets",
         } => sub {
-            my ($commands, %context) = @_;
-            $context{reply}->(
+            my ($context) = @_;
+            $context->reply(
                 "Total connections: ".scalar(keys %{ $self->{connections} // {} })."\n\t".
                join("\n\t", keys %{ $self->{connections} // {} })
             );
@@ -123,23 +124,44 @@ sub handle_websocket_message {
         $self->bot->warn($msg);
         $self->bot->ws_send( $user, { error => $msg } );
     } else {
-        my $seq = $data->{seq} // $self->{connection_sequences}{$user}++; # Meant for client-side to relate responses to requests where needed
-        $self->bot->plugin('Commands')->event(
-            command     => $data->{command},
+        my $context = Bot::ClueBot::Plugin::Commands::Context::WebSocket->new(
+            bot => $self->bot,
             (
-                defined($data->{argline}) ?
-                    (argline => $data->{argline}) :
-                    keys(%{ $data->{params} // {} }) ?
-                        (params => $data->{params}) :
-                        ()
+                defined($data->{argline}) ? (argline => $data->{argline}) :
+                keys(%{ $data->{params} // {} }) ? (params => $data->{params}) :
+                ()
             ),
-            source_type => 'websocket',
-            source_jid  => $user.'/ws',
-            reply       => sub { $self->bot->ws_send( $user, { seq => $seq, response => shift } ); },
+            user => $user,
+            # Meant for client-side to relate responses to requests where needed
+            seq => $data->{seq} // $self->{connection_sequences}{$user}++,
         );
+        $self->bot->handle_command( $data->{command}, $context );
     }
 }
 
+package Bot::ClueBot::Plugin::Commands::Context::WebSocket;
 
+our @ISA = ('Bot::ClueBot::Plugin::Commands::Context');
+
+sub new {
+    my ($proto, %args) = @_;
+    my $user = delete $args{user};
+
+    my $self = $proto->SUPER::new(
+        %args,
+        source_type => 'websocket',
+        source_jid  => $user.'/ws',
+        source_user => $user,
+    );
+
+    return $self;
+}
+
+sub reply {
+    my ($self, $data) = @_;
+    $self->{bot}->ws_send( $self->{source_user}, { seq => $self->{seq}, response => $data } );
+}
+
+sub private_reply { shift->reply(@_); }
 
 1;

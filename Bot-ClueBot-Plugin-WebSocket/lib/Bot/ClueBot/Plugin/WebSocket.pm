@@ -90,6 +90,11 @@ sub init {
                 die "FORBIDDEN";
             }
 
+            if( exists $self->{connections}{$user} ) {
+                $self->bot->warn("User $user already has a websocket connection");
+                die "NOT_ALLOWED";
+            }
+
             $self->bot->debug("Incomming websocket connection for: ".$request->resource_name);
 
             $user;

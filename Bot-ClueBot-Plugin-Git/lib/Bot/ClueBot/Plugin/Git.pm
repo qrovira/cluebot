@@ -16,23 +16,41 @@ our $VERSION = '0.02';
 
 =head1 NAME
 
-Bot::ClueBot::Plugin::Git - Git plugin for Bot::ClueBot
+Bot::ClueBot::Plugin::Git - ClueBot plugin that provides Git integration
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 
-Provides Git features to Bot::ClueBot
+This plugin provides access to Git local git repositories, so users can request
+information via commands, and other plugins can get repository handles via a
+helper.
+
+=head1 ACL
+
+Access to this plugin's functionality requires C<git> ACL membership.
 
 =head1 OPTIONS
 
 =over
 
-=item option1
+=item gitroot
 
-Descriptiton of option1
+Base directory for git repositories. All subdirectories will be checked at start
+time, when checking for repos.
+
+=item repos
+
+Repositories to register.
+
+It can either be an array of paths to the repositories, or a hash that maps repository
+names to their paths.
+
+=item log_max_commits
+
+Maximum number of commits that can be returned when fetching information via commands.
 
 =back
 
@@ -40,9 +58,9 @@ Descriptiton of option1
 
 =over
 
-=item sample( $arg1, ... )
+=item repository( $name )
 
-A sample helper
+Returns the AnyEvent::Git::Wrapper object for the given reposiroty alias.
 
 =back
 
@@ -50,17 +68,13 @@ A sample helper
 
 =over
 
-=item sample
+=item git_repos
 
-A sample command
+Display a list of known repositories
 
-=back
+=item git_log $repo [$ref [$num] ]
 
-=head1 EVENTS
-
-=over
-
-=item
+Display the commig short log for a given repository
 
 =back
 

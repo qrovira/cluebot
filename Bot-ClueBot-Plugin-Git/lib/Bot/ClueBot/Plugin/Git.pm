@@ -98,8 +98,11 @@ sub init {
             my @dirs = grep /^(?!\.)/, readdir $dh;
             closedir $dh;
 
-            $self->register_repository( $_ => File::Spec->catfile( $root, $_ )  )
-                foreach @dirs;
+            foreach my $repo (@dirs) {
+                my $fdir = File::Spec->catfile( $root, $repo );
+                next unless -d $fdir;
+                $self->register_repository( $repo => $fdir  );
+            }
         }
         else {
             $self->bot->warn("Invalid git root path '$root'");

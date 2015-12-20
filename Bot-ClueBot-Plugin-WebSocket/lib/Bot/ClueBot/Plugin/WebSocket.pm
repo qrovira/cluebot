@@ -72,7 +72,7 @@ sub init {
     };
 
     $self->{connections} = {};
-    $self->{connection_sequences} = {};
+    $self->{connection_count} = 0;
 
     $self->{server} = AnyEvent::WebSocket::Server->new(
         validator => sub {
@@ -90,11 +90,6 @@ sub init {
                 die "FORBIDDEN";
             }
 
-            if( exists $self->{connections}{$user} ) {
-                $self->bot->warn("User $user already has a websocket connection");
-                die "NOT_ALLOWED";
-            }
-
             $self->bot->debug("Incomming websocket connection for: ".$request->resource_name);
 
             $user;
@@ -110,29 +105,35 @@ sub init {
                 close($fh);
                 return;
             }
+            my $resource = "ws".($self->{connection_count}++);
+            my $jid = "$user/$resource";
+            $self->{connections}{ $user }{ $resource } = $connection;
             $self->bot->debug("Accepted websocket connection request for $user");
-            $self->{connections}{$user} = $connection;
-            $self->bot->ws_send($user, "Welcome, $user!");
-            $connection->on(each_message => sub { $self->handle_websocket_message( shift, shift, $user ) } );
+            $self->bot->ws_send($jid, "Welcome, $jid!");
+            $connection->on(each_message => sub { $self->handle_websocket_message( shift, shift, $jid ) } );
             $connection->on(finish => sub {
                 undef $connection;
-                delete $self->{connections}{$user};
-                $self->bot->debug("Disconnected websocket for $user");
+                delete $self->{connections}{$user}{$resource};
+                $self->bot->debug("Disconnected websocket for $jid");
             });
         });
     };
 
     $self->bot->helper(
         ws_connection => sub {
-            my ($bot, $user) = @_;
-            return $self->{connections}{$user};
+            my ($bot, $jid) = @_;
+            my ($user,$resource) = split '/', $jid, 2;
+            return $resource ? $self->{connections}{$user}{$resource} :
+                values( %{ $self->{connections}{$user} // {} } );
         },
         ws_send => sub {
-            my ($bot, $user, $data) = @_;
-            my $conn = $self->{connections}{$user} // return 0;
+            my ($bot, $jid, $data) = @_;
+            my ($user,$resource) = split '/', $jid, 2;
+            my @conn = $resource ? ($self->{connections}{$user}{$resource}) : values @{ $self->{connections}{$user} // {} };
+            return 0 unless @conn;
             my $body = eval { encode_json( ref($data) ? $data : { text => $data } ); };
             my $msg = AnyEvent::WebSocket::Message->new( body => $body );
-            $conn->send( $msg );
+            $_->send( $msg ) foreach( @conn );
             return 1;
         }
     );
@@ -144,9 +145,13 @@ sub init {
             category => "WebSockets",
         } => sub {
             my ($context) = @_;
+
             $context->reply(
-                "Total connections: ".scalar(keys %{ $self->{connections} // {} })."\n\t".
-               join("\n\t", keys %{ $self->{connections} // {} })
+                "Current open websocket connections:\n\t".
+               join "\n\t",
+                   map "\t$_: ".scalar(keys %{$self->{connections}{$_}}),
+                   grep keys %{ $self->{connections}{$_} },
+                   keys %{ $self->{connections} // {} }
             );
         },
     );

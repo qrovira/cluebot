@@ -11,6 +11,25 @@ Version 0.02
 When enabled, this plugin will listen for websocket connections to a given port (defaults to 9191),
 through which you can execute commands on the bot.
 
+You can connect ot the websocket interface using an endpoint url like `ws://hostname:port/$user/$token`.
+
+The token can be requested by users from the WebToken plugin.
+
+You can use the test script `cluebot-websocket-client` for test purposes:
+
+    ./cluebot-websocker-client ws://my-jabber-server:9191/user@domain/eyJhbGciOi...
+    Connected!
+    Received message from endpoint:
+        {"text":"Welcome, user@domain/ws0!"}
+    {"command":"help", "params":{"command":"web_token"}}
+    Sending {"command":"help", "params":{"command":"web_token"}}...
+    Received message from endpoint:
+        {"response":"Help for web_token:\nGenerate auth token for use with other bot services","seq":0}
+    {"command":"list_chatrooms"}
+    Sending {"command":"list_chatrooms"}...
+    Received message from endpoint:
+        {"response":{"testbot_log@conference.domain":{"autojoin":"1","password":null,"quiet":"0"}},"seq":1}
+
 # OPTIONS
 
 - port

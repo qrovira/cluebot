@@ -7,11 +7,14 @@ use strict;
 use utf8;
 use 5.10.0;
 
+use AnyEvent::HTTP;
+use JSON;
+
 our $VERSION = '0.01';
 
 =head1 NAME
 
-Bot::ClueBot::Plugin::Graphite - Graphite plugin for Bot::ClueBot
+Bot::ClueBot::Plugin::Graphite - Plugin that provides integration with Graphite
 
 =head1 VERSION
 
@@ -19,25 +22,29 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-Provides Graphite features to Bot::ClueBot
+This plugin provides functionality to integrate with Graphite, to request some simple metrics,
+and to get notified of certain events.
 
 =head1 OPTIONS
 
 =over
 
-=item option1
+=item base_url
 
-Descriptiton of option1
+Base url where graphite can be reached, including protocol, hostname and port if needed.
 
-=back
+(eg. C<http://graphite-host/>)
 
-=head1 HELPERS
+=item socks
 
-=over
+Optional socks proxy url to use to connect to graphite.
 
-=item sample( $arg1, ... )
+(eg. C<socks5://internal-proxy:8080>)
 
-A sample helper
+=item targets
+
+Hash map of common graphite metrics using alias to their default configurations.
+This targets can later be used on commands, to avoid typing.
 
 =back
 
@@ -45,17 +52,23 @@ A sample helper
 
 =over
 
-=item sample
+=item graphite_check
 
-A sample command
+Fetch recent (2 min average) data for a given graphite metric.
+
+=item graphite_subscribe
+
+Get notifications when conditions are met on a graphite metric
 
 =back
 
-=head1 EVENTS
+=head1 HELPERS
 
 =over
 
-=item
+=item graphite_data( %opts, $callback )
+
+Retrieve data from graphite, and call $callback with results (a hash ref) or errors (string).
 
 =back
 
@@ -67,33 +80,90 @@ sub requires { qw/Commands/ }
 sub init {
     my $self = shift;
     my $args = {
+        targets => {},
         %{ shift // {} },
     };
 
     $self->bot->helper(
-        sample => sub {
-            my ($bot, $arg1 ) = @_;
-
-            ...
-        },
+        graphite_data => \&_graphite_data,
     );
 
     $self->bot->command(
-        sample => {
-            help => "Graphite command",
-            help_usage => "sample ...",
+        graphite_check => {
             category => "Graphite",
+            help => "Fetch recent (2 min average) data for a given graphite metric.",
+            help_usage => "graphite_check some.graphite.target",
+            params => [
+                target => {
+                    help => "Graphite target, or alias of a registered target",
+                    required => 1,
+                }
+            ]
         } => sub {
-            my ($bot, %context) = @_;
-            my ($user,$resource) = split '/', $context{source_jid};
+            my ($context) = @_;
+            my $target = $context->{params}{target};
+            $self->bot->graphite_data(
+                target => $target,
+                from => "-2minutes",
+                until => "now",
+                sub {
+                    my $metric = shift;
+                    my @data = grep { defined $_->[0] } @$metric;
 
-            $context{reply}->("Some text");
+                    if( ! ref $metric ) {
+                        $context->reply( "Error fetching graphite data: $metric." );
+                    }
+                    elsif( @data ) {
+                        $context->reply(
+                            "For target $target, average of last 2 minutes is: ".
+                            sum( map $_->[0], @data) / (@data || 1)
+                        );
+                    }
+                    else {
+                        $context->reply( "Recent data not found for ttarget $target." );
+                    }
 
-            ...
+                }
+            );
         },
     );
 }
 
 
+sub _graphite_data {
+    my $self = shift;
+    my $callback = pop;
+    my %opts = @_;
+
+    $opts{target} = $self->{targets}{$opts{target}}
+        if $self->{targets}{$opts{target}};
+
+    $opts{format} = 'json';
+    $opts{from} //= '-5minutes';
+    $opts{until} //= 'now';
+
+    my $url = $self->{base_url}.'/render/?'. join '&', map("$_=$opts{$_}", keys %opts);
+
+    http_request
+        GET => $url,
+        ( $self->{socks} ? ( socks => $self->{socks} ) : () ),
+        sub {
+            my ($json, $headers) = @_;
+
+            if( $headers->{Status} eq "200" ) {
+                if( my ($metric) = eval { @{ decode_json $json }; } ) {
+                    $callback->($metric);
+                } else {
+                    my $error = "Could not deserialzie graphite JSON response: ".($@ // 'Unknown error');
+                    $self->bot->warn( $error );
+                    $callback->( $error );
+                }
+            } else {
+                my $error = "Error fetching graphite metrics (status=$headers->{Status})";
+                $self->bot->warn( $error );
+                $callback->( $error );
+            }
+        };
+}
 
 1;

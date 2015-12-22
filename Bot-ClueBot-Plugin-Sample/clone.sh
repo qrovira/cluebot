@@ -13,6 +13,3 @@ read
 rm -rf .git clone.sh
 mv lib/Bot/ClueBot/Plugin/Sample.pm lib/Bot/ClueBot/Plugin/${PLUGIN_NAME}.pm
 find -type f | xargs sed -i "s#Sample#$PLUGIN_NAME#g"
-git init
-git add -A
-git commit -a -m "Initial commit for $PLUGIN_NAME plugin"

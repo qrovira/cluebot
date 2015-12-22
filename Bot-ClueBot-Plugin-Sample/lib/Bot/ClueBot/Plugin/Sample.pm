@@ -51,14 +51,6 @@ A sample command
 
 =back
 
-=head1 EVENTS
-
-=over
-
-=item
-
-=back
-
 =cut
 
 
@@ -80,15 +72,19 @@ sub init {
 
     $self->bot->command(
         sample => {
+            category => "Sample",
             help => "Sample command",
             help_usage => "sample ...",
-            category => "Sample",
+            params => [
+                param_name => {
+                    required => 1,
+                    help => "Param help line",
+                }
+            ]
         } => sub {
-            my ($bot, %context) = @_;
-            my ($user,$resource) = split '/', $context{source_jid};
+            my ($context) = @_;
 
-            $context{reply}->("Some text");
-
+            $context->reply("Some text");
             ...
         },
     );

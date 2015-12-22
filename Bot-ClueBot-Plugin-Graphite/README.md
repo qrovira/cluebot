@@ -1,6 +1,6 @@
 # NAME
 
-Bot::ClueBot::Plugin::Graphite - Graphite plugin for Bot::ClueBot
+Bot::ClueBot::Plugin::Graphite - Plugin that provides integration with Graphite
 
 # VERSION
 
@@ -8,26 +8,40 @@ Version 0.01
 
 # SYNOPSIS
 
-Provides Graphite features to Bot::ClueBot
+This plugin provides functionality to integrate with Graphite, to request some simple metrics,
+and to get notified of certain events.
 
 # OPTIONS
 
-- option1
+- base\_url
 
-    Descriptiton of option1
+    Base url where graphite can be reached, including protocol, hostname and port if needed.
 
-# HELPERS
+    (eg. `http://graphite-host/`)
 
-- sample( $arg1, ... )
+- socks
 
-    A sample helper
+    Optional socks proxy url to use to connect to graphite.
+
+    (eg. `socks5://internal-proxy:8080`)
+
+- targets
+
+    Hash map of common graphite metrics using alias to their default configurations.
+    This targets can later be used on commands, to avoid typing.
 
 # COMMANDS
 
-- sample
+- graphite\_check
 
-    A sample command
+    Fetch recent (2 min average) data for a given graphite metric.
 
-# EVENTS
+- graphite\_subscribe
 
--
+    Get notifications when conditions are met on a graphite metric
+
+# HELPERS
+
+- graphite\_data( %opts, $callback )
+
+    Retrieve data from graphite, and call $callback with results (a hash ref) or errors (string).

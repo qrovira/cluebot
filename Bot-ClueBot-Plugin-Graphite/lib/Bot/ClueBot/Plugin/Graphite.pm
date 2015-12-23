@@ -7,8 +7,10 @@ use strict;
 use utf8;
 use 5.10.0;
 
-use AnyEvent::HTTP;
 use JSON;
+use List::Util qw/ sum /;
+use AnyEvent::HTTP;
+use AnyEvent::HTTP::Socks;
 
 our $VERSION = '0.01';
 
@@ -85,7 +87,43 @@ sub init {
     };
 
     $self->bot->helper(
-        graphite_data => \&_graphite_data,
+        graphite_data => sub {
+            my $bot = shift;
+            my $callback = pop;
+            my %opts = @_;
+
+            $opts{target} = $args->{targets}{$opts{target}}
+                if $args->{targets}{$opts{target}};
+
+            $opts{format} = 'json';
+            $opts{from} //= '-5minutes';
+            $opts{until} //= 'now';
+
+            my $url = $args->{base_url}.'/render/?'. join '&', map("$_=$opts{$_}", keys %opts);
+
+            $bot->debug("Requesting graphite data from $url".($args->{socks}?" (using socke proxy $args->{socks})":""));
+
+            http_request
+                GET => $url,
+                ( $args->{socks} ? ( socks => $args->{socks} ) : () ),
+                sub {
+                    my ($json, $headers) = @_;
+
+                    if( $headers->{Status} eq "200" ) {
+                        if( my ($metric) = eval { @{ decode_json $json }; } ) {
+                            $callback->($metric);
+                        } else {
+                            my $error = "Could not deserialzie graphite JSON response: ".($@ // 'Unknown error');
+                            $bot->warn( $error );
+                            $callback->( $error );
+                        }
+                    } else {
+                        my $error = "Error fetching graphite metrics (status=$headers->{Status})";
+                        $bot->warn( $error );
+                        $callback->( $error );
+                    }
+                };
+        }
     );
 
     $self->bot->command(
@@ -108,12 +146,11 @@ sub init {
                 until => "now",
                 sub {
                     my $metric = shift;
-                    my @data = grep { defined $_->[0] } @$metric;
 
                     if( ! ref $metric ) {
                         $context->reply( "Error fetching graphite data: $metric." );
                     }
-                    elsif( @data ) {
+                    elsif( my @data = grep { defined $_->[0] } @{$metric->{datapoints}} ) {
                         $context->reply(
                             "For target $target, average of last 2 minutes is: ".
                             sum( map $_->[0], @data) / (@data || 1)
@@ -130,40 +167,5 @@ sub init {
 }
 
 
-sub _graphite_data {
-    my $self = shift;
-    my $callback = pop;
-    my %opts = @_;
-
-    $opts{target} = $self->{targets}{$opts{target}}
-        if $self->{targets}{$opts{target}};
-
-    $opts{format} = 'json';
-    $opts{from} //= '-5minutes';
-    $opts{until} //= 'now';
-
-    my $url = $self->{base_url}.'/render/?'. join '&', map("$_=$opts{$_}", keys %opts);
-
-    http_request
-        GET => $url,
-        ( $self->{socks} ? ( socks => $self->{socks} ) : () ),
-        sub {
-            my ($json, $headers) = @_;
-
-            if( $headers->{Status} eq "200" ) {
-                if( my ($metric) = eval { @{ decode_json $json }; } ) {
-                    $callback->($metric);
-                } else {
-                    my $error = "Could not deserialzie graphite JSON response: ".($@ // 'Unknown error');
-                    $self->bot->warn( $error );
-                    $callback->( $error );
-                }
-            } else {
-                my $error = "Error fetching graphite metrics (status=$headers->{Status})";
-                $self->bot->warn( $error );
-                $callback->( $error );
-            }
-        };
-}
 
 1;

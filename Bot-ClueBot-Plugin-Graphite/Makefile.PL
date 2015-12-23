@@ -21,6 +21,8 @@ WriteMakefile(
     },
     PREREQ_PM => {
         'Bot::ClueBot' => "0.01",
+        'AnyEvent::HTTP' => '2.22',
+        'AnyEvent::HTTP::Socks' => '0.05',
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean => { FILES => "Bot-ClueBot-Plugin-$plugin_name-*" },

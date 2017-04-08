@@ -10,6 +10,11 @@ Bot-ClueBot-Plugin-Git
 EOD
 )
 
+if ! command -v cpanm; then
+    echo "You seem to be missing cpanm on the path"
+    exit 1
+fi
+
 for REPO in $ALL_REPOS; do
     pushd $REPO >> /dev/null
     echo "Processing ${REPO}..."
